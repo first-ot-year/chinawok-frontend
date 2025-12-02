@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { items, total } = useCart()
+  const { items, total, clearCart } = useCart()
   const { customerId } = useTenant()
 
   const [loading, setLoading] = useState(false)
@@ -54,27 +54,31 @@ export default function CheckoutPage() {
     try {
       setLoading(true)
 
+      // NOTE: The backend service for creating an order only expects customer_id and items.
+      // The other customer details might be stored separately or handled in a different step.
       const orderData = {
         customer_id: customerId,
-        customer_name: formData.customerName,
-        phone: formData.phone,
-        delivery_address: formData.deliveryAddress,
-        notes: formData.notes,
         items: items.map((item) => ({
           product_id: item.id,
           quantity: item.quantity,
           price: item.price,
         })),
+        // We are passing these along just in case, but they are not in the Postman collection
+        customer_name: formData.customerName,
+        phone: formData.phone,
+        delivery_address: formData.deliveryAddress,
+        notes: formData.notes,
         total: total,
-        status: "Iniciando pedido",
       }
 
       const response = await ordersService.createOrder(orderData)
 
-      if (response.id) {
-        router.push(`/orders/${response.id}`)
+      if (response && response.data && response.data.order_id) {
+        clearCart()
+        router.push(`/orders/${response.data.order_id}`)
       } else {
-        setError("Error al crear el pedido. Por favor, intenta de nuevo.")
+        const errorMessage = response.message || "Error al crear el pedido. Por favor, intenta de nuevo."
+        setError(errorMessage)
       }
     } catch (err) {
       console.error("Error creating order:", err)
@@ -85,7 +89,6 @@ export default function CheckoutPage() {
   }
 
   const deliveryFee = total > 24.9 ? 0 : 5.0
-  const subtotal = total - deliveryFee
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-3xl">
@@ -207,7 +210,7 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
-                  <span>S/ {subtotal.toFixed(2)}</span>
+                  <span>S/ {total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Delivery</span>

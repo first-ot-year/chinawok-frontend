@@ -15,6 +15,13 @@ interface DashboardData {
   orders: any[]
 }
 
+// Mock staff data for now
+const mockStaff = {
+  cook: { id: "COOK_01", name: "Juan Cocinero" },
+  packer: { id: "PACKER_01", name: "Ana Empacadora" },
+  delivery: { id: "DELIVERY_01", name: "Luis Repartidor" },
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData>({
     totalOrders: 0,
@@ -26,34 +33,34 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true)
-        const dashboardRes = await statusService.getDashboardStatus()
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      const dashboardRes = await statusService.getDashboardStatus()
 
-        const pendingStatuses = ["Iniciando pedido", "Cocinero asignado", "Cocinando", "Esperando empaque", "Empacando"]
-        const deliveryStatuses = ["En camino"]
-        const completedStatuses = ["Entregado"]
+      const pendingStatuses = ["Iniciando pedido", "Cocinero asignado", "Cocinando", "Esperando empaque", "Empacando"]
+      const deliveryStatuses = ["En camino"]
+      const completedStatuses = ["Entregado"]
 
-        const stats = {
-          totalOrders: dashboardRes.orders?.length || 0,
-          pendingOrders: dashboardRes.orders?.filter((o: any) => pendingStatuses.includes(o.status)).length || 0,
-          inDelivery: dashboardRes.orders?.filter((o: any) => deliveryStatuses.includes(o.status)).length || 0,
-          completed: dashboardRes.orders?.filter((o: any) => completedStatuses.includes(o.status)).length || 0,
-          orders: dashboardRes.orders || [],
-        }
-
-        setData(stats)
-        setError(null)
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err)
-        setError("Error al cargar el dashboard")
-      } finally {
-        setLoading(false)
+      const stats = {
+        totalOrders: dashboardRes.orders?.length || 0,
+        pendingOrders: dashboardRes.orders?.filter((o: any) => pendingStatuses.includes(o.status)).length || 0,
+        inDelivery: dashboardRes.orders?.filter((o: any) => deliveryStatuses.includes(o.status)).length || 0,
+        completed: dashboardRes.orders?.filter((o: any) => completedStatuses.includes(o.status)).length || 0,
+        orders: dashboardRes.orders || [],
       }
-    }
 
+      setData(stats)
+      setError(null)
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err)
+      setError("Error al cargar el dashboard")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchDashboardData()
     const interval = setInterval(fetchDashboardData, 30000) // Refresh every 30 seconds
 
@@ -62,7 +69,8 @@ export default function DashboardPage() {
 
   const handleAssignCook = async (orderId: string) => {
     try {
-      await fulfillmentService.assignCook(orderId)
+      await fulfillmentService.assignCook(orderId, mockStaff.cook.id, mockStaff.cook.name)
+      // Optimistic update
       setData((prev) => ({
         ...prev,
         orders: prev.orders.map((o) => (o.id === orderId ? { ...o, status: "Cocinero asignado" } : o)),
@@ -74,7 +82,8 @@ export default function DashboardPage() {
 
   const handleMarkPacked = async (orderId: string) => {
     try {
-      await fulfillmentService.markPacked(orderId)
+      await fulfillmentService.markPacked(orderId, mockStaff.packer.id, mockStaff.packer.name)
+      // Optimistic update
       setData((prev) => ({
         ...prev,
         orders: prev.orders.map((o) => (o.id === orderId ? { ...o, status: "Empacando" } : o)),
@@ -86,7 +95,8 @@ export default function DashboardPage() {
 
   const handleAssignDelivery = async (orderId: string) => {
     try {
-      await fulfillmentService.assignDelivery(orderId)
+      await fulfillmentService.assignDelivery(orderId, mockStaff.delivery.id, mockStaff.delivery.name)
+      // Optimistic update
       setData((prev) => ({
         ...prev,
         orders: prev.orders.map((o) => (o.id === orderId ? { ...o, status: "En camino" } : o)),
@@ -98,7 +108,8 @@ export default function DashboardPage() {
 
   const handleMarkDelivered = async (orderId: string) => {
     try {
-      await fulfillmentService.markDelivered(orderId)
+      await fulfillmentService.markDelivered(orderId, mockStaff.delivery.id, mockStaff.delivery.name)
+      // Optimistic update
       setData((prev) => ({
         ...prev,
         orders: prev.orders.map((o) => (o.id === orderId ? { ...o, status: "Entregado" } : o)),

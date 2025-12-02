@@ -1,8 +1,12 @@
+"use client"
 import { Search, User, ShoppingCart, Phone, MapPin } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useCart } from "@/lib/context/cart-context"
 
 export function Header() {
+  const { total } = useCart()
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
       {/* Top Bar */}
@@ -63,7 +67,7 @@ export function Header() {
           <Link href="/checkout/cart">
             <Button className="bg-cw-green hover:bg-green-700 text-white rounded-full px-6">
               <ShoppingCart className="mr-2 h-4 w-4" />
-              S/ 0.00
+              S/ {total.toFixed(2)}
             </Button>
           </Link>
         </div>
